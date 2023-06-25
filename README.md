@@ -20,5 +20,14 @@ exclude_paths="/var */recordings*/*.mp4 */Camera*/*.mp4"
 ```
 
 `$include_dirs` are processed by `tar`, the `$exclude_*` by `find` which generates a list of dirs and/or files to be ignored by `tar`. Use the respective syntaxes! (You may need to read their manpages.)
-In particular, the processing is done as follows
-* $exclude_prune 
+In particular, the processing is done per white-space separated path as follows
+* `$exclude_prune` are added with `-ipath <path> -prune`
+* `$exclude_dirs` are added with `-iname <path> -prune`
+* `$exclude_files` are added with `-iname <path>`
+* `$exclude_paths` are added with `-ipath <path>`
+Consequently, pathnames with embedded spaces are bound to break something. In particular, for the `$target_drive`/`_path` this will not work.
+
+A succesful backup is marked by creating a file named `BACKUP_COMPLETE` in the directory. Conversely `BACKUP_FAIL` indicates somethign went wrong (most likely, your disk has filled up -- unless that also prevented this file from being created).
+
+# Future plans:
+Currently, only backups are made. Failed backups are not deleted. Importantly, there also is no cleanup policy to remove older backups. I'm planning to borrow the logic from [Simple Backup](https://launchpad.net/sbackup).
