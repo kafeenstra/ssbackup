@@ -7,6 +7,12 @@ It is meant to be launched from `cron`, by creating simlinks like so:
 ```
 Of course, your `ssbackup` may live somewhere else, and you may prefer different backup intervals.
 
+Default is a full backup. There are three ways to initiate an incremental backup:
+* launch through link named `backup_inc`, as shown above
+* add parameter `inc` on the commandline
+* add specific filename on the commandline, which will be used as reference timepoint
+For the first two cases, the `$target_dir` is searched for the latest succesful backup, which is then used as reference timepoint.
+
 Customization is performed in the header of the script, where the following lines live:
 ```
 target_drive="/media/<user>/<user>_Backup"
