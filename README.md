@@ -1,11 +1,20 @@
 # ssbackup
-Super Simple Backup is a wrapper around unix `tar`, which only does full or incremental backups. 
+Super Simple Backup is a bash wrapper around unix `tar`, which only does full or incremental backups. 
+Backups will be `gzip`ped; its parallel `pigz` counterpart is automatically used when available.
+
 It is meant to be launched from `cron`, by creating simlinks like so:
 ```
 /etc/cron.daily/backup_inc -> ~/bin/ssbackup*
 /etc/cron.monthly/backup -> ~/bin/ssbackup*
 ```
 Of course, your `ssbackup` may live somewhere else, and you may prefer different backup intervals.
+
+Default is a full backup. There are three ways to initiate an incremental backup:
+* launch through link named `backup_inc`, as shown above
+* add parameter `inc` on the commandline
+* add specific filename on the commandline, which will be used as reference timepoint
+
+For the first two cases, the `$target_dir` is searched for the latest succesful backup, which is then used as reference timepoint.
 
 Customization is performed in the header of the script, where the following lines live:
 ```
@@ -26,6 +35,7 @@ In particular, the processing is done per white-space separated path as follows
 * `$exclude_dirs` are added with `-iname <path> -prune`
 * `$exclude_files` are added with `-iname <path>`
 * `$exclude_paths` are added with `-ipath <path>`
+
 Consequently, pathnames with embedded spaces are bound to break something. In particular, for the `$target_drive`/`_path` this will not work.
 
 A succesful backup is marked by creating a file named `BACKUP_COMPLETE` in the directory. Conversely `BACKUP_FAIL` indicates somethign went wrong (most likely, your disk has filled up -- unless that also prevented this file from being created).
