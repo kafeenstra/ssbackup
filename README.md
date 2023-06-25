@@ -1,6 +1,6 @@
 # ssbackup
 Super Simple Backup is a bash wrapper around unix `tar`, which only does full or incremental backups. 
-Backups will be `gzip`ped; its parallel `pigz` is automatically used when available.
+Backups will be `gzip`ped; its parallel `pigz` counterpart is automatically used when available.
 
 It is meant to be launched from `cron`, by creating simlinks like so:
 ```
