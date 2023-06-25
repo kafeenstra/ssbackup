@@ -9,7 +9,7 @@ Of course, your `ssbackup` may live somewhere else, and you may prefer different
 
 Customization is performed in the header of the script, where the following lines live:
 ```
-target_drive="/media/feenstra/Feenstra_VU_Back"
+target_drive="/media/<user>/<user>_Backup"
 target_dir="$target_drive/Backupset2"
 
 include_dirs="/ /home"
@@ -18,6 +18,7 @@ exclude_dirs=".gvfs .thumbnails .trash .cache lock .tmp tmp .dropbox .git imapma
 exclude_files="windows\*.vdi"
 exclude_paths="/var */recordings*/*.mp4 */Camera*/*.mp4"
 ```
+Drive and dir are assumed to exist, if they're not something will fail (not tested) (`/media/<user>/...` is where under Ubuntu external disks are mounted).
 
 `$include_dirs` are processed by `tar`, the `$exclude_*` by `find` which generates a list of dirs and/or files to be ignored by `tar`. Use the respective syntaxes! (You may need to read their manpages.)
 In particular, the processing is done per white-space separated path as follows
