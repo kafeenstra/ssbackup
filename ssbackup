@@ -59,6 +59,7 @@ if [ ! -d "$backup_dir" ]; then
 fi
 
 echo "Starting backup to" $backup_dir
+\df -h --output=target,size,used,avail,pcent "$target_drive"
 
 backup_file="$backup_dir"/files.tar.gz
 excl_file="$backup_dir"/$backup_name.exclude_list
@@ -102,5 +103,6 @@ else
 fi
 
 ls -lh "$backup_dir"
+\df -h --output=target,size,used,avail,pcent "$target_drive"
 
 exit $exit_val
