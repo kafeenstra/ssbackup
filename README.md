@@ -53,4 +53,4 @@ See src/sbackup/core/SnapshotManager.py
         Keep one backup per month from last year.
         Keep one backup per quarter from 2nd last year.
         Keep one backup per year further in past.        
-'''
+```
