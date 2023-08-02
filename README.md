@@ -44,7 +44,8 @@ A succesful backup is marked by creating a file named `BACKUP_COMPLETE` in the d
 Currently, only backups are made. Failed backups are not deleted. Importantly, there also is no cleanup policy to remove older backups. I'm planning to borrow the logic from [Simple Backup](https://launchpad.net/sbackup).
 
 See src/sbackup/core/SnapshotManager.py
-        """Logarithmic purge
+```
+        Logarithmic purge
         Keep progressivelly less backups into the past:
         Keep all backups from yesterday
         Keep one backup per day from last week.
@@ -52,4 +53,4 @@ See src/sbackup/core/SnapshotManager.py
         Keep one backup per month from last year.
         Keep one backup per quarter from 2nd last year.
         Keep one backup per year further in past.        
-        """
+'''
