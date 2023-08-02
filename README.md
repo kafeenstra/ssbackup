@@ -41,6 +41,8 @@ Consequently, pathnames with embedded spaces are bound to break something. In pa
 A succesful backup is marked by creating a file named `BACKUP_COMPLETE` in the directory. Conversely `BACKUP_FAIL` indicates somethign went wrong (most likely, your disk has filled up -- unless that also prevented this file from being created).
 
 # Future plans:
+Current implementation is in bash -- python would make much more sense for long(er) term sustainability.
+
 Currently, only backups are made. Failed backups are not deleted. Importantly, there also is no cleanup policy to remove older backups. I'm planning to borrow the logic from [Simple Backup](https://launchpad.net/sbackup).
 
 See [src/sbackup/core/SnapshotManager.py](https://bazaar.launchpad.net/~sbackup-dev/sbackup/trunk/view/head:/src/sbackup/core/SnapshotManager.py)
