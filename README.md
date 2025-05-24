@@ -10,7 +10,7 @@ It is meant to be launched from `cron`, by creating simlinks like so:
 Of course, your `ssbackup` may live somewhere else, and you may prefer different backup intervals.
 
 Default is a full backup. There are three ways to initiate an incremental backup:
-* launch through link named `backup_inc`, as shown above
+* launch through link named `backup_inc`, as shown above (in fact, if the link name contains `inc`)
 * add parameter `inc` on the commandline
 * add specific filename on the commandline, which will be used as reference timepoint
 
