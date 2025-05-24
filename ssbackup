@@ -2,10 +2,11 @@
 
 target_drive="/media/feenstra/Feenstra_VU_Back"
 target_dir="$target_drive/Backupset2"
+log_dir="/var/log/sbackup" # leave empty for no local log
 
 include_dirs="/ /home"
 exclude_prune="/var /tmp"
-exclude_dirs=".gvfs .thumbnails .trash .cache lock .tmp tmp .dropbox .git imapmail indexeddb"
+exclude_dirs=".gvfs .thumbnails .trash Trash .cache lock .tmp tmp .dropbox .git imapmail indexeddb"
 exclude_files="windows\*.vdi"
 exclude_paths="/var */recordings*/*.mp4 */Camera*/*.mp4"
 
@@ -18,7 +19,7 @@ if [ -f "$1" ]; then
     echo "Making incremental backup relative to $1"
     tar_newer=" --newer=$1 "
     ext="inc"
-elif [ "$1" == "inc" ] || [ $my_name == "backup_inc" ]; then
+elif [ "$1" == "inc" ] || [ $my_name =~ inc ]; then
     echo "Making incremental backup"
     ref_dir=$(dirname `\ls -t "$target_dir"/*/BACKUP_COMPLETE | head -1`)
     ref=`\ls $ref_dir/*.exclude_list`
@@ -94,6 +95,7 @@ tar $compress --one-file-system $tar_newer -c -v -v -f "$backup_file" \
     $include_dirs \
     2> "$err_file" 1> "$log_file"
 exit_val=$?
+
 if [ $exit_val -lt 2 ]; then 
     echo "Backup completed successfully!"
     touch "$backup_dir/BACKUP_COMPLETE"
@@ -101,6 +103,23 @@ else
     echo "Backup failed!"
     touch "$backup_dir/BACKUP_FAIL"
 fi
+if [ "$log_dir" != "" ]; then
+    if [ ! -d "$log_dir" ]; then
+	echo "Warning local log dir does not exist, not copying"
+    else
+	# local dir *does* exist
+	my_log_dir="$log_dir/"$backup_name
+	if [ -x "$my_log_dir" ]; then
+	    echo "Warning local logdir already exists:" $my_log_dir
+	    ls -lh "$my_log_dir"
+	fi
+	mkdir "$my_log_dir"
+	echo "Copying error and log files and backup status for local reference"
+	cp "$err_file" "$log_file" "$backup_dir/BACKUP_"* "$my_log_dir"
+	ls -lh "$my_log_dir"
+    fi
+fi
+
 
 ls -lh "$backup_dir"
 \df -h --output=target,size,used,avail,pcent "$target_drive"
