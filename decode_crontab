@@ -1,0 +1,14 @@
+#!/usr/bin/awk -f
+
+# skip all lines not about sbackup
+$6!~/#*\/usr\/bin\/sbackup/ {next}
+
+/^[0-9]+\W+\*+\W+\*\W+\*\W+\*\W/ {print "hourly"} 
+
+/^[0-9]+\W+[0-9]+\W+\*\W+\*\W+\*\W/ {print "daily"}
+
+/^[0-9]+\W+[0-9]+\W+\*\W+\*\W+[0-9]+\W/ {print "weekly"}
+
+/^[0-9]+\W+[0-9]+\W+[0-9]+\W+\*\W+\*\W/ {print "monthly"}
+
+/^[0-9]+\W+[0-9]+\W+[0-9]+\W+[0-9]+\W+\*\W/ {print "yearly"}
