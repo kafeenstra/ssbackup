@@ -1,7 +1,7 @@
 #!/usr/bin/awk -f
 
-# skip all lines not about sbackup
-$6!~/#*\/usr\/bin\/sbackup/ {next}
+# skip all lines not about (ss)backup
+$6!~/backup/ {next}
 
 /^[0-9]+\W+\*+\W+\*\W+\*\W+\*\W/ {print "hourly"} 
 
