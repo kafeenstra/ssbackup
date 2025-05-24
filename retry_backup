@@ -1,0 +1,37 @@
+#!/bin/bash
+#
+# retry running Sbackup if previous attempt failed
+# used by pm to run at thaw/resume
+
+# cleanup script left by check_backup_schedule if manual mount was needed:
+sbackup_ps=/tmp/sbackup/mount_post_script
+
+# find backup schedule and check with latest succesful backup:
+if [ -x /usr/share/sbackup/check_backup_schedule ]; then
+    /usr/share/sbackup/check_backup_schedule
+    if (( $? != 1 )); then
+	# no backup needed
+	exit 0
+    fi
+    if [ -f $sbackup_ps ]; then
+	echo "Will run following commands for cleanup when backup is completed:"
+	cat $sbackup_ps
+	echo "."
+    fi
+fi
+
+for sbackup in /usr/share/sbackup/sbackup-launch /usr/bin/sbackup /usr/sbin/sbackupd; do
+    if [ -x $sbackup ]; then
+	echo Launching $sbackup
+	$sbackup
+	/usr/share/sbackup/copy_succesful_backup
+	break
+    fi
+done
+
+if [ -f $sbackup_ps ]; then
+    . $sbackup_ps
+    rm $sbackup_ps
+fi
+
+#last line
