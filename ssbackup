@@ -142,7 +142,7 @@ if [ "$log_dir" != "" ]; then
 	echo "Warning local log dir does not exist, not copying"
     else
 	# local dir *does* exist
-	my_log_dir="$log_dir/"$backup_name
+	my_log_dir="$log_dir/"$backup_name.$ext
 	if [ -x "$my_log_dir" ]; then
 	    echo "Warning local logdir already exists:" $my_log_dir
 	    ls -lh "$my_log_dir"
