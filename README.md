@@ -16,10 +16,12 @@ Default is a full backup. There are three ways to initiate an incremental backup
 
 For the first two cases, the `$target_dir` is searched for the latest succesful backup, which is then used as reference timepoint.
 
-Customization is performed in the header of the script, where the following lines live:
+Customization is done in the config file, where the following lines live:
 ```
+target_host="user@hostname" # leave blank for local backup
 target_drive="/media/<user>/<user>_Backup"
 target_dir="$target_drive/Backupset2"
+log_dir="/var/log/sbackup" # leave blank for no local (non external drive) log copies
 
 include_dirs="/ /home"
 exclude_prune="/var /tmp"
@@ -38,11 +40,9 @@ In particular, the processing is done per white-space separated path as follows
 
 Consequently, pathnames with embedded spaces are bound to break something. In particular, for the `$target_drive`/`_path` this will not work.
 
-A succesful backup is marked by creating a file named `BACKUP_COMPLETE` in the directory. Conversely `BACKUP_FAIL` indicates somethign went wrong (most likely, your disk has filled up -- unless that also prevented this file from being created).
+A succesful backup is marked by creating a file named `BACKUP_COMPLETE` in the directory. Conversely `BACKUP_FAIL` indicates something went wrong (most likely, your disk has filled up -- unless that also prevented this file from being created).
 
 # Future plans:
-Current implementation is in bash -- python would make much more sense for long(er) term sustainability.
-
 Currently, only backups are made. Failed backups are not deleted. Importantly, there also is no cleanup policy to remove older backups. I'm planning to borrow the logic from [Simple Backup](https://launchpad.net/sbackup).
 
 See [src/sbackup/core/SnapshotManager.py](https://bazaar.launchpad.net/~sbackup-dev/sbackup/trunk/view/head:/src/sbackup/core/SnapshotManager.py)
