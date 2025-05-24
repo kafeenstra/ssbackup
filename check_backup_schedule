@@ -4,30 +4,29 @@
 # returns 0 if backup needed, 1 if not needed, and -1 on error
 # used by pm to run at thaw/resume
 
-logdir=/var/log/sbackup
-if [ ! -w $logdir ]; then
-    echo "$logdir not ours or does not exist"
-    logdir=~/.local/share/sbackup/log
-fi
-if [ ! -w $logdir ]; then
-    echo "$logdir not ours or does not exist"
-    exit -1
-fi
-echo "Using logfiles from $logdir"
-conf=/etc/sbackup.conf
-if [ ! -w $conf ]; then
-    echo "$conf not ours or does not exist"
-    conf=~/.config/sbackup/sbackup.conf
-fi
-if [ ! -w $conf ]; then
-    echo "$conf not ours or does not exist"
-    exit -1
-fi
+install_dir=$(dirname `realpath $0`)
+
+for i; do # loop over cmdline args
+    if [ "$i" == "test" ]; then
+	test=1
+    elif [ "X$i" == "X-v" ]; then
+	debug=1
+    fi
+done
+
+conf=$install_dir/config
 echo "Using config from $conf"
+. $conf
+
+if [ ! -w $log_dir ]; then
+    echo "$log_dir not ours or does not exist"
+    [[ $test ]] || exit -1
+fi
+echo "Using logfiles from $log_dir"
 
 # find sbackup schedule from crontab (for user, if available) 
 # else use /etc/cron* (root)
-interval=`crontab -l | ~/src/sbackup_retry/decode_crontab`
+interval=`crontab -l | $install_dir/decode_crontab`
 if [ "$interval" != "" ]; then
     echo "Using interval $interval from $USER crontab"
 else
@@ -37,7 +36,7 @@ else
 	    interval="${sbackup%/sbackup}"
 	    interval="${interval#/etc/cron.}"
 	    echo "Using interval $interval from /etc/cron.*"
-	    #echo $sbackup $interval
+	    [[ $debug ]] && echo $sbackup $interval
 	fi
     done
 fi
@@ -54,30 +53,30 @@ if [ "$interval" == "" ]; then
 fi
 
 if   [ "$interval" == "hourly"  ]; then
-    #echo Hourly
+    [[ $debug ]] && echo Hourly
     now=`date +%Y-%m-%d_%H`
 elif [ "$interval" == "daily"   ]; then
-    #echo Daily
+    [[ $debug ]] && echo Daily
     now=`date +%Y-%m-%d`
 elif [ "$interval" == "monthly" ]; then
-    #echo Monthly
+    [[ $debug ]] && echo Monthly
     now=`date +%Y-%m`
 else
-    #echo Assume Yearly:
+    [[ $debug ]] && echo Assume Yearly:
     now=`date +%Y`
 fi
 
-echo "$interval $now"
+[[ $debug ]] && echo "$interval $now"
 
 # get previous backups:
-if [ ! -d $logdir ]; then
-    echo "E: no sbackup logdir $logdir"
-    exit -1
+if [ ! -d $log_dir ]; then
+    echo "E: no sbackup logdir $log_dir"
+    [[ $test ]] || exit -1
 fi
 
-backups=`ls -t1 $logdir/sbackup.$now*.log $logdir/sbackup.log*`
-# echo "Checking logfiles:"
-# ls $backups
+backups=`ls -t1 $log_dir/sbackup.$now*.log $log_dir/sbackup.log*`
+[[ $debug ]] && echo "Checking logfiles:"
+[[ $debug ]] && ls $backups
 for backup in $backups; do 
     type=${backup##*.}
     if [ "$type" == "gz" ]; then
@@ -96,7 +95,7 @@ for backup in $backups; do
 	echo "$interval backup succesful on $now according to ${backup##*/}"
 	
 	# We're done now, no backup needed; exit cleanly
-	#echo Succesful $interval backup $backup
+	[[ $debug ]] && echo Succesful $interval backup $backup
 	exit 0
     fi
 done
@@ -106,83 +105,21 @@ echo "No succesful $interval backup for $now"
 
 # find backup hostname and see if we can ssh onto it
 # (to avoid harrassing the user with useless popups)
-buhost=`awk '/^target\W*=\W*/{\
-gsub("^target\\\W*=\\\W*","");\
-n=split($0, w, "://");\
-if (n>=2) {\
-  s=w[2]; \
-  gsub("^[^/]*//","",s);\
-  gsub("/.*$","");\
-  print;\
-}}' $conf`
-
-if [ "X$buhost" == "X" ] ; then
+if [ "X$target_host" == "X" ] ; then
     echo "Local backup"
 else
-    if ( ! ssh -o BatchMode=yes $buhost hostname < /dev/null ); then 
-	echo Cannot connect to $buhost
+    if ( ! ssh -o BatchMode=yes $target_host hostname < /dev/null ); then 
+	echo Cannot connect to $target_host
 	exit -1
     fi
 fi
 
-# check if target dir exists, and if not, try if we can mount it:
-butarget=`awk '/^target\W*=\W*/{\
-gsub("^target\\\W*=[ \t]*",""); \
-print; \
-}' $conf`
-
-if [ ! -d "$butarget" ]; then
-    # attempt gvfs mount (usually doesn't work for root):
-    echo "Target '$butarget' not present."
-    bumount=`echo "$butarget" | awk '/^\/media\//{\
-    n=split($0, w, "/"); \
-    print w[4]; \
-    }'`
-    if [ "X$bumount" != "X" ] ; then
-	echo "Target is on external disk '$bumount', will attempt mounting"
-	# \x-hex-encode target label (specifically, '\x20' for space):
-	bumountenc=`urlencode "$bumount" | sed 's/%/\\\\x/g'`
-	echo "$bumountenc"
-	budev="`readlink -f "/dev/disk/by-label/$bumountenc"`"
-	echo "$budev"
-	gvfs-mount -d "$budev"
-    fi
-fi
-
-if [ ! -d "$butarget" ]; then
-    # attempt direct mount (will work for root, usually not for user):
-    sbackup_ps=/tmp/sbackup/mount_post_script
-    if [ -f $sbackup_ps ]; then
-	rm $sbackup_ps
-    else
-	mkdir `dirname $sbackup_ps`
-    fi
-    touch $sbackup_ps
-    echo "Target '$butarget' still not present."
-    # mount_target=`echo "$butarget" | awk '/^\/media\//{\
-    # 	    n=split($0, w, "/"); \
-    # 	    print "/"w[2]"/"w[3]"/"w[4]; \
-    # 	    }'`
-    # if [ "X$mount_target" != "X" ] ; then
-    # 	echo "Attempt mounting $budev directly to $mount_target"
-    # 	# for cleanup, we need umount before rmdir:
-    # 	echo "umount \"$budev\"" >> $sbackup_ps
-    # 	# create mountpoint if needed:
-    # 	if [ ! -d "$mount_target" ]; then
-    # 	    mkdir "$mount_target"
-    # 	    chmod 777 "$mount_target"
-    # 	    # for cleanup:
-    # 	    echo "rmdir \"$mount_target\"" >> $sbackup_ps
-    # 	fi
-    # 	mount -o user "$budev" "$mount_target"
-    # fi
-fi
-
-if [ -d "$butarget" ]; then
+# check if target dir exists:
+if [ -d "$target_dir" ]; then
     echo "Backup target present:"
-    ls -ld "$butarget"
+    ls -ld "$target_dir"
 else
-    echo "Target '$butarget' still not present."
+    echo "Target '$target_dir' still not present."
     echo "Will continue, but don't hold your breath..."
 fi
 
