@@ -6,11 +6,15 @@
 
 install_dir=$(dirname `realpath $0`)
 
+ext=""
 for i; do # loop over cmdline args
     if [ "$i" == "test" ]; then
 	test=1
     elif [ "X$i" == "X-v" ]; then
 	debug=1
+	echo "DEBUG"
+    elif [ "$i" == "inc" ]; then
+	ext="_inc"
     fi
 done
 
@@ -24,19 +28,19 @@ if [ ! -w $log_dir ]; then
 fi
 echo "Using logfiles from $log_dir"
 
-# find sbackup schedule from crontab (for user, if available) 
+# find backup schedule from crontab (for user, if available) 
 # else use /etc/cron* (root)
 interval=`crontab -l | $install_dir/decode_crontab`
 if [ "$interval" != "" ]; then
     echo "Using interval $interval from $USER crontab"
 else
     # no interval set from crontab, search /etc/cron.*:
-    for sbackup in /etc/cron.*/sbackup; do
-	if [ -x "$sbackup" ]; then 
-	    interval="${sbackup%/sbackup}"
-	    interval="${interval#/etc/cron.}"
-	    echo "Using interval $interval from /etc/cron.*"
-	    [[ $debug ]] && echo $sbackup $interval
+    for backup in /etc/cron.*/backup$ext; do
+	if [ -x "$backup" ]; then 
+	    interval="${backup%/backup$ext}"  # strip suffix
+	    interval="${interval#/etc/cron.}" # strip prefix
+	    echo "Using interval $interval from" $backup
+	    [[ $debug ]] && echo $backup $interval
 	fi
     done
 fi
@@ -70,27 +74,22 @@ fi
 
 # get previous backups:
 if [ ! -d $log_dir ]; then
-    echo "E: no sbackup logdir $log_dir"
+    echo "E: no backup logdir $log_dir"
     [[ $test ]] || exit -1
 fi
 
-backups=`ls -t1 $log_dir/sbackup.$now*.log $log_dir/sbackup.log*`
+if [ "$ext" == "_inc" ]; then ext="inc"; else ext="ful"; fi
+#backups=`ls -t1 $log_dir/sbackup.$now*.log $log_dir/sbackup.log*`
+backups=$(ls -td1 $log_dir/$now*.`hostname`.$ext)
 [[ $debug ]] && echo "Checking logfiles:"
-[[ $debug ]] && ls $backups
+[[ $debug ]] && ls -d $backups
 for backup in $backups; do 
-    type=${backup##*.}
-    if [ "$type" == "gz" ]; then
-	cat="gunzip -c"
-    else
-	cat="cat"
+    if [ ! -d $backup ]; then 
+	echo "No such dir $backup"; 
+	break; 
     fi
-    success=`$cat $backup | grep -c '^'$now'[ 0-9:,-]*INFO: TAR .*has been finished successfully.'`
-    if [ $success -eq 0 ]; then
-	success=`$cat $backup | grep -c '^'$now'[ 0-9:,-]*INFO: TAR .*returned warnings'`
-    fi
-    error=`$cat $backup | grep -c '^'$now'[ 0-9:,-]*ERROR:'`
-    echo "$backup $success $error"
-    if [ $success -ne 0 ] && [ $error -eq 0 ]; then
+    [ -f $backup/BACKUP_COMPLETE ] && success=1 || success=0
+    if [ $success -ne 0 ]; then
 	# found at least one succesful backup in interval
 	echo "$interval backup succesful on $now according to ${backup##*/}"
 	
@@ -119,7 +118,7 @@ if [ -d "$target_dir" ]; then
     echo "Backup target present:"
     ls -ld "$target_dir"
 else
-    echo "Target '$target_dir' still not present."
+    echo "Target '$target_dir' not present."
     echo "Will continue, but don't hold your breath..."
 fi
 
