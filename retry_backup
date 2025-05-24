@@ -1,37 +1,26 @@
 #!/bin/bash
 #
-# retry running Sbackup if previous attempt failed
-# used by pm to run at thaw/resume
+# retry running ssbackup if previous attempt failed
+# can be used by pm to run at thaw/resume
+# also via cron at shorter than intented interval (i.e. check hourly for daily backup)
 
-# cleanup script left by check_backup_schedule if manual mount was needed:
-sbackup_ps=/tmp/sbackup/mount_post_script
+install_dir=$(dirname `realpath $0`)
+my_name=`basename $0`
+ext=""
+if [[ $my_name =~ inc ]]; then
+    ext="inc"
+fi
 
 # find backup schedule and check with latest succesful backup:
-if [ -x /usr/share/sbackup/check_backup_schedule ]; then
-    /usr/share/sbackup/check_backup_schedule
-    if (( $? != 1 )); then
-	# no backup needed
-	exit 0
-    fi
-    if [ -f $sbackup_ps ]; then
-	echo "Will run following commands for cleanup when backup is completed:"
-	cat $sbackup_ps
-	echo "."
-    fi
+if [ -x $install_dir/check_backup_schedule ]; then
+    $install_dir/check_backup_schedule "$@" && exit 0 # no backup needed
 fi
 
-for sbackup in /usr/share/sbackup/sbackup-launch /usr/bin/sbackup /usr/sbin/sbackupd; do
-    if [ -x $sbackup ]; then
-	echo Launching $sbackup
-	$sbackup
-	/usr/share/sbackup/copy_succesful_backup
-	break
+for backup in $install_dir/ssbackup $install_dir/sbackup-launch /usr/bin/sbackup /usr/sbin/sbackupd; do
+    if [ -x $backup ]; then
+	echo "Launching $backup $ext $@"
+	$backup "$ext" "$@" || echo Failed && break
     fi
 done
-
-if [ -f $sbackup_ps ]; then
-    . $sbackup_ps
-    rm $sbackup_ps
-fi
 
 #last line
