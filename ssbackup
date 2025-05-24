@@ -4,18 +4,34 @@ tar_newer=""
 ext="ful"
 
 my_name=`basename $0`
-my_dir=$(dirname `realpath $0`)
-echo $my_name
-echo $my_dir
-. $my_dir/config
-echo $exclude_dirs
+real_name=$(basename `realpath $0`)
+install_dir=$(dirname `realpath $0`)
 
 if [[ $my_name =~ inc ]]; then
     ext="inc"
 fi
 for i; do # loop over cmdline args
-    echo $i
-    if [ -f "$i" ]; then
+    [[ $debug ]] && echo $i
+    if [ "X$i" == "X-h" ]; then
+	echo "Usage:"
+	echo ""
+	echo "$real_name [-h] [-v] [inc] [test] [reference]"
+	echo ""
+	echo "-h: print help text and exit"
+	echo "-v: increase verbosity (debug output)"
+	echo "inc: perform incremental backup relative to last succesful (default full backup)"
+	echo "test: run preamble tests and exit (no filesystem changes)"
+	echo "reference: perform incremental backup relative to this file's date"
+	echo ""
+	echo "launching from a symlink that contains 'inc' also triggers an incremental backup"
+	echo "this allows a setup like:"
+	echo "/etc/cron.daily/backup_inc -> ~/bin/ssbackup*"
+	echo "/etc/cron.monthly/backup -> ~/bin/ssbackup*"
+	echo "to run monthly full and daily incremental backups automatically"
+	exit 0
+    elif [ "X$i" == "X-v" ]; then
+	debug=1
+    elif [ -f "$i" ]; then
 	ext="inc"
 	ref="$i"
     elif [ "$i" == "inc" ]; then
@@ -24,16 +40,12 @@ for i; do # loop over cmdline args
 	test=1
     fi
 done
-if [ "$ext" == "inc" ]; then
-    if [ "$ref" == "" ]; then
-	ref_dir=$(dirname `\ls -t "$target_dir"/*/BACKUP_COMPLETE | head -1`)
-	ref=`\ls $ref_dir/*.exclude_list`
-    fi
-    echo "Making incremental backup relative to $ref"
-    tar_newer=" --newer=$ref "
-else
-    echo "Making full backup"
-fi
+
+[[ $debug ]] && echo $my_name
+[[ $debug ]] && echo $install_dir
+. $install_dir/config
+[[ $debug ]] && echo $exclude_dirs
+
 if [ ! -d "$target_drive" ]; then
     echo "ERROR: no backup drive:" $target_drive
     [[ $test ]] || exit -1 # exit unless we're only testing
@@ -41,6 +53,18 @@ fi
 if [ ! -w "$target_dir" ]; then
     echo "ERROR: no backup directory, or not writable:" $target_dir
     [[ $test ]] || exit -1 # exit unless we're only testing
+fi
+
+if [ "$ext" == "inc" ]; then
+    if [ "$ref" == "" ]; then
+	# get latest succesful backup
+	ref_dir=$(dirname `\ls -t "$target_dir"/*/BACKUP_COMPLETE | head -1`)
+	ref=`\ls $ref_dir/*.exclude_list`
+    fi
+    echo "Making incremental backup relative to $ref"
+    tar_newer=" --newer=$ref "
+else
+    echo "Making full backup"
 fi
 
 pigz=`which pigz`
@@ -83,11 +107,11 @@ cmd_excl_dirs=$( for i in $exclude_dirs; do echo "-o -iname $i -prune"; done )
 cmd_excl_files=$( for i in $exclude_files; do echo "-o -iname $i"; done )
 cmd_excl_paths=$( for i in $exclude_paths; do echo "-o -ipath $i"; done )
 
-# echo $include_dirs
-# echo $cmd_excl_prune
-# echo $cmd_excl_dirs
-# echo $cmd_excl_files
-# echo $cmd_excl_paths
+[[ $debug ]] && echo $include_dirs
+[[ $debug ]] && echo $cmd_excl_prune
+[[ $debug ]] && echo $cmd_excl_dirs
+[[ $debug ]] && echo $cmd_excl_files
+[[ $debug ]] && echo $cmd_excl_paths
 
 find $include_dirs -xdev $cmd_excl_prune -o \
      -type d \( -false $cmd_excl_dirs \) -o \
@@ -97,8 +121,8 @@ find $include_dirs -xdev $cmd_excl_prune -o \
 ls -l "$excl_file"
 
 echo "Starting tar backup process"
-echo compress "$compress"
-echo newer "$tar_newer"
+[[ $debug ]] && echo compress "$compress"
+[[ $debug ]] && echo newer "$tar_newer"
 
 tar $compress --one-file-system $tar_newer -c -v -v -f "$backup_file" \
     --exclude-from="$excl_file" \
