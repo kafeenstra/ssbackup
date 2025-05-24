@@ -1,6 +1,7 @@
+target_host= # remote user@host to ssh to - leave empty for local backup
 target_drive="/media/feenstra/Feenstra_VU_Back"
 target_dir="$target_drive/Backupset2"
-log_dir="/var/log/sbackup" # leave empty for no local log
+log_dir="/var/log/sbackup" # non-removable location - leave empty for no local log
 
 include_dirs="/ /home"
 exclude_prune="/var /tmp"
