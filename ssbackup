@@ -1,42 +1,46 @@
 #!/usr/bin/env bash
 
-target_drive="/media/feenstra/Feenstra_VU_Back"
-target_dir="$target_drive/Backupset2"
-log_dir="/var/log/sbackup" # leave empty for no local log
-
-include_dirs="/ /home"
-exclude_prune="/var /tmp"
-exclude_dirs=".gvfs .thumbnails .trash Trash .cache lock .tmp tmp .dropbox .git imapmail indexeddb"
-exclude_files="windows\*.vdi"
-exclude_paths="/var */recordings*/*.mp4 */Camera*/*.mp4"
-
 tar_newer=""
 ext="ful"
 
 my_name=`basename $0`
+my_dir=$(dirname `realpath $0`)
+echo $my_name
+echo $my_dir
+. $my_dir/config
+echo $exclude_dirs
 
-if [ -f "$1" ]; then
-    echo "Making incremental backup relative to $1"
-    tar_newer=" --newer=$1 "
+if [[ $my_name =~ inc ]]; then
     ext="inc"
-elif [ "$1" == "inc" ] || [ $my_name =~ inc ]; then
-    echo "Making incremental backup"
-    ref_dir=$(dirname `\ls -t "$target_dir"/*/BACKUP_COMPLETE | head -1`)
-    ref=`\ls $ref_dir/*.exclude_list`
-    echo "Relative to $ref"
+fi
+for i; do # loop over cmdline args
+    echo $i
+    if [ -f "$i" ]; then
+	ext="inc"
+	ref="$i"
+    elif [ "$i" == "inc" ]; then
+	ext="inc"
+    elif [ "$i" == "test" ]; then
+	test=1
+    fi
+done
+if [ "$ext" == "inc" ]; then
+    if [ "$ref" == "" ]; then
+	ref_dir=$(dirname `\ls -t "$target_dir"/*/BACKUP_COMPLETE | head -1`)
+	ref=`\ls $ref_dir/*.exclude_list`
+    fi
+    echo "Making incremental backup relative to $ref"
     tar_newer=" --newer=$ref "
-    ext="inc"
 else
     echo "Making full backup"
 fi
-
 if [ ! -d "$target_drive" ]; then
     echo "ERROR: no backup drive:" $target_drive
-    exit -1
+    [[ $test ]] || exit -1 # exit unless we're only testing
 fi
 if [ ! -w "$target_dir" ]; then
     echo "ERROR: no backup directory, or not writable:" $target_dir
-    exit -1
+    [[ $test ]] || exit -1 # exit unless we're only testing
 fi
 
 pigz=`which pigz`
@@ -51,8 +55,14 @@ backup_name=`date +%F_%H.%M.%S`"."`hostname`
 backup_dir="$target_dir/$backup_name.$ext"
 if [ -x "$backup_dir" ]; then
     echo "ERROR: backup dir exists:" $backup_dir
-    exit -1
+    [[ $test ]] || exit -1 # exit unless we're only testing
 fi
+
+if [ $test ]; then 
+    echo "only TESTING -- exit now"
+    exit
+fi
+
 mkdir "$backup_dir"
 if [ ! -d "$backup_dir" ]; then
     echo "ERROR: could not create backup dir:" $backup_dir

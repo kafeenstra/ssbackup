@@ -1,0 +1,10 @@
+target_drive="/media/feenstra/Feenstra_VU_Back"
+target_dir="$target_drive/Backupset2"
+log_dir="/var/log/sbackup" # leave empty for no local log
+
+include_dirs="/ /home"
+exclude_prune="/var /tmp"
+exclude_dirs=".gvfs .thumbnails .trash Trash .cache lock .tmp tmp .dropbox .git imapmail indexeddb"
+exclude_files="windows\*.vdi"
+exclude_paths="/var */recordings*/*.mp4 */Camera*/*.mp4"
+
