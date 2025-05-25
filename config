@@ -1,3 +1,8 @@
+# backup intervals; options are hourly, daily, monthly, yearly
+# default is to get from /etc/cron.<interval> for root, or from user crontab
+interval= # interval for full backup
+interval_inc= # interval for incremental backup
+
 target_host= # remote user@host to ssh to - leave empty for local backup
 target_drive="/media/feenstra/Feenstra_VU_Back"
 target_dir="$target_drive/Backupset2"

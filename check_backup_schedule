@@ -30,10 +30,19 @@ echo "Using logfiles from $log_dir"
 
 # find backup schedule from crontab (for user, if available) 
 # else use /etc/cron* (root)
-interval=`crontab -l | $install_dir/decode_crontab`
+if [ "$ext" == "_inc" ]; then
+    interval=$interval_inc
+fi
 if [ "$interval" != "" ]; then
-    echo "Using interval $interval from $USER crontab"
-else
+    echo "Using interval $interval from config $conf"
+fi
+if [ "$interval" == "" ]; then
+    interval=`crontab -l | $install_dir/decode_crontab`
+    if [ "$interval" != "" ]; then
+	echo "Using interval $interval from $USER crontab"
+    fi
+fi
+if [ "$interval" == "" ]; then
     # no interval set from crontab, search /etc/cron.*:
     for backup in /etc/cron.*/backup$ext; do
 	if [ -x "$backup" ]; then 
@@ -43,17 +52,6 @@ else
 	    [[ $debug ]] && echo $backup $interval
 	fi
     done
-fi
-if [ "$interval" == "" ]; then
-    interval=`awk '\
-        /^\[/{p=0} \
-	/^\[\W*schedule\W*\]/{p=1}\
-	p&&/^anacron\W*=\W*/{\
-	gsub("^anacron\\\W*=\\\W*","");\
-	gsub("^[^/]*//","");\
-	gsub("/.*$","");\
-	print}' $conf`
-    echo "Using interval $interval from $conf"
 fi
 
 if   [ "$interval" == "hourly"  ]; then
