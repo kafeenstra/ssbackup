@@ -30,6 +30,11 @@ Note, you'll need to set the interval in the config file (see below), or *also* 
 # Customazation:
 Customization is done in the config file, where the following lines live:
 ```
+# backup intervals; options are hourly, daily, monthly, yearly
+# default is to get from /etc/cron.<interval> for root, or from user crontab
+interval= # interval for full backup
+interval_inc= # interval for incremental backup
+
 target_host="user@hostname" # leave blank for local backup
 target_drive="/media/<user>/<user>_Backup"
 target_dir="$target_drive/Backupset2"
@@ -41,7 +46,7 @@ exclude_dirs=".gvfs .thumbnails .trash .cache lock .tmp tmp .dropbox .git imapma
 exclude_files="windows\*.vdi"
 exclude_paths="/var */recordings*/*.mp4 */Camera*/*.mp4"
 ```
-Drive and dir are assumed to exist, if they're not something will fail (not tested) (`/media/<user>/...` is where under Ubuntu external disks are mounted).
+If the `$target_dir` doesn't exist, or isn't writeable to the user, an error is printed and ssbackup terminates. (`/media/<user>/...` is where under Ubuntu external disks are mounted)
 
 `$include_dirs` are processed by `tar`, the `$exclude_*` by `find` which generates a list of dirs and/or files to be ignored by `tar`. Use the respective syntaxes! (You may need to read their manpages.)
 In particular, the processing is done per white-space separated path as follows
