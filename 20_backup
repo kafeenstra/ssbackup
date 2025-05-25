@@ -1,0 +1,16 @@
+#!/bin/bash
+# 
+# under ubuntu, put this in /etc/pm/sleep.d to run at each resume
+# so that we start a backup asap if needed
+
+install_dir=/home/feenstra/bin
+
+case "$1" in
+    thaw|resume)
+	# start in the future to allow network or USB drive to come online:
+        echo $install_dir/retry_backup | at  now + 5 min >/dev/null
+        ;;
+    *)
+        ;;
+esac
+exit $?
