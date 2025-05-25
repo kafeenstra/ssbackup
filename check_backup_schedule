@@ -89,7 +89,16 @@ for backup in $backups; do
 	break; 
     fi
     [ -f $backup/BACKUP_COMPLETE ] && success=1 || success=0
-    if [ $success -ne 0 ]; then
+    if [ $success == 0 ]; then
+	# there is an incomplete backup for interval - check if still ongoing
+	if $( fuser $backup/files.tar.gz ); then
+	    echo "$interval backup ongoing $now in $backup"
+	    
+	    # We're done now, no backup needed; exit cleanly
+	    [[ $debug ]] && echo Ongoing $interval backup $backup
+	    exit 0
+	fi
+    else
 	# found at least one succesful backup in interval
 	echo "$interval backup succesful on $now according to ${backup##*/}"
 	
@@ -109,6 +118,7 @@ if [ "X$target_host" == "X" ] ; then
 else
     if ( ! ssh -o BatchMode=yes $target_host hostname < /dev/null ); then 
 	echo Cannot connect to $target_host
+        echo Backup needed but unable to proceed
 	exit -1
     fi
 fi
