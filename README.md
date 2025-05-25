@@ -7,15 +7,27 @@ It is meant to be launched from `cron`, by creating simlinks like so:
 /etc/cron.daily/backup_inc -> ~/bin/ssbackup*
 /etc/cron.monthly/backup -> ~/bin/ssbackup*
 ```
-Of course, your `ssbackup` may live somewhere else, and you may prefer different backup intervals.
+Of course, your `ssbackup` may live somewhere else, and you may prefer different backup intervals. To run as user, use your user crontab entry.
 
 Default is a full backup. There are three ways to initiate an incremental backup:
 * launch through link named `backup_inc`, as shown above (in fact, if the link name contains `inc`)
 * add parameter `inc` on the commandline
-* add specific filename on the commandline, which will be used as reference timepoint
+* add specific filename on the commandline (e.g. from the previous backup), which will be used as reference timepoint
 
 For the first two cases, the `$target_dir` is searched for the latest succesful backup, which is then used as reference timepoint.
 
+# Retries:
+Most backup programs only try to do a backup once each interval (e.g., daily or montly), so that if it fails (because your usb drive wasn't plugged it), you miss one backup.
+
+To enable multiple tries, we provide the `retry_backup` utility, so that you can e.g. try the daily backup each hour - success guaranteed ... eventually! Use it instead of the backup script itself, with simlinks like so:
+```
+/etc/cron.hourly/backup_inc -> ~/bin/retry_backup*
+/etc/cron.montly/backup -> ~/bin/retry_backup*
+```
+Note, you'll need to set the interval in the config file (see below), or *also* have the ssbackup links as explained above (if you're running backups as user, your user crontab will be parsed to find corresponding backup entries). Options are hourly, daily, monthly, or yearly. The (lame) default is yearly.
+
+
+# Customazation:
 Customization is done in the config file, where the following lines live:
 ```
 target_host="user@hostname" # leave blank for local backup
