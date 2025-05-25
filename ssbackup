@@ -70,6 +70,7 @@ fi
 pigz=`which pigz`
 if [ $pigz == '' ]; then
     compress="-z"
+    pigz=gzip # fallback
 else
     echo "Using parallel compression through" $pigz
     compress="--use-compress-program=pigz"
@@ -133,6 +134,8 @@ exit_val=$?
 if [ $exit_val -lt 2 ]; then 
     echo "Backup completed successfully!"
     touch "$backup_dir/BACKUP_COMPLETE"
+    echo "Compressing logfiles"
+    $pigz $log_file $err_file $excl_file
 else
     echo "Backup failed!"
     touch "$backup_dir/BACKUP_FAIL"
@@ -149,7 +152,7 @@ if [ "$log_dir" != "" ]; then
 	fi
 	mkdir "$my_log_dir"
 	echo "Copying error and log files and backup status for local reference"
-	cp "$err_file" "$log_file" "$backup_dir/BACKUP_"* "$my_log_dir"
+	cp "$err_file"{,.gz} "$log_file"{,.gz} "$backup_dir/BACKUP_"* "$my_log_dir"
 	ls -lh "$my_log_dir"
     fi
 fi
