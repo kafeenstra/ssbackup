@@ -26,6 +26,8 @@ To enable multiple tries, we provide the `retry_backup` utility, so that you can
 ```
 Note, you'll need to set the interval in the config file (see below), or *also* have the ssbackup links as explained above (if you're running backups as user, your user crontab will be parsed to find corresponding backup entries). Options are hourly, daily, monthly, or yearly. The (lame) default is yearly.
 
+Another script, `20_backup` is provided that can be used to trigger a backup retry when waking up from suspend. Under Ubuntu, this script can be placed (or simlinked) under `/etc/pm/sleep.d`.
+
 
 # Customization:
 Customization is done in the config file, where the following lines live:
