@@ -94,25 +94,25 @@ if [ ! -d "$backup_dir" ]; then
     exit -1
 fi
 
-echo "Starting backup to" $backup_dir
-\df -h --output=target,size,used,avail,pcent "$target_drive"
-
 backup_file="$backup_dir"/files.tar.gz
 excl_file="$backup_dir"/$backup_name.exclude_list
 log_file="$backup_dir"/$backup_name.log
 err_file="$backup_dir"/$backup_name.err
 
-echo "Generating exclude list" $excl_file
+echo "Starting backup to" $backup_dir | tee -a "$log_file"
+\df -h --output=target,size,used,avail,pcent "$target_drive" | tee -a "$log_file"
+
+echo "Generating exclude list" $excl_file | tee -a "$log_file"
 cmd_excl_prune=$( for i in $exclude_prune; do echo "-ipath $i -prune"; done )
 cmd_excl_dirs=$( for i in $exclude_dirs; do echo "-o -iname $i -prune"; done )
 cmd_excl_files=$( for i in $exclude_files; do echo "-o -iname $i"; done )
 cmd_excl_paths=$( for i in $exclude_paths; do echo "-o -ipath $i"; done )
 
-[[ $debug ]] && echo $include_dirs
-[[ $debug ]] && echo $cmd_excl_prune
-[[ $debug ]] && echo $cmd_excl_dirs
-[[ $debug ]] && echo $cmd_excl_files
-[[ $debug ]] && echo $cmd_excl_paths
+[[ $debug ]] && echo $include_dirs | tee -a "$log_file"
+[[ $debug ]] && echo $cmd_excl_prune | tee -a "$log_file"
+[[ $debug ]] && echo $cmd_excl_dirs | tee -a "$log_file"
+[[ $debug ]] && echo $cmd_excl_files | tee -a "$log_file"
+[[ $debug ]] && echo $cmd_excl_paths | tee -a "$log_file"
 
 find $include_dirs -xdev $cmd_excl_prune -o \
      -type d \( -false $cmd_excl_dirs \) -o \
@@ -121,9 +121,9 @@ find $include_dirs -xdev $cmd_excl_prune -o \
 
 ls -l "$excl_file"
 
-echo "Starting tar backup process"
-[[ $debug ]] && echo compress "$compress"
-[[ $debug ]] && echo newer "$tar_newer"
+echo "Starting tar backup process" | tee -a "$log_file"
+[[ $debug ]] && echo compress "$compress" | tee -a "$log_file"
+[[ $debug ]] && echo newer "$tar_newer" | tee -a "$log_file"
 
 tar $compress --one-file-system $tar_newer -c -v -v -f "$backup_file" \
     --exclude-from="$excl_file" \
@@ -132,17 +132,17 @@ tar $compress --one-file-system $tar_newer -c -v -v -f "$backup_file" \
 exit_val=$?
 
 if [ $exit_val -lt 2 ]; then 
-    echo "Backup completed successfully!"
+    echo "Backup completed successfully!" | tee -a "$log_file"
     touch "$backup_dir/BACKUP_COMPLETE"
-    echo "Compressing logfiles"
-    $pigz $log_file $err_file $excl_file
+    echo "Compressing logfiles" | tee -a "$log_file"
+    $pigz $log_file $err_file $excl_file | tee -a "$log_file"
 else
-    echo "Backup failed!"
+    echo "Backup failed!" | tee -a "$log_file"
     touch "$backup_dir/BACKUP_FAIL"
 fi
 if [ "$log_dir" != "" ]; then
     if [ ! -d "$log_dir" ]; then
-	echo "Warning local log dir does not exist, not copying"
+	echo "Warning local log dir does not exist, not copying" | tee -a "$log_file"
     else
 	# local dir *does* exist
 	my_log_dir="$log_dir/"$backup_name.$ext
@@ -158,7 +158,7 @@ if [ "$log_dir" != "" ]; then
 fi
 
 
-ls -lh "$backup_dir"
-\df -h --output=target,size,used,avail,pcent "$target_drive"
+ls -lh "$backup_dir" | tee -a "$log_file"
+\df -h --output=target,size,used,avail,pcent "$target_drive" | tee -a "$log_file"
 
 exit $exit_val
