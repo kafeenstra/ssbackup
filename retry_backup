@@ -13,7 +13,25 @@ fi
 
 # find backup schedule and check with latest succesful backup:
 if [ -x $install_dir/check_backup_schedule ]; then
-    $install_dir/check_backup_schedule "$@" && exit 0 # no backup needed
+    echo "checking schedule:"
+    if $install_dir/check_backup_schedule "$@" ; then
+	# no full backup needed, check for incremental:
+	echo "no full backup needed, check for incremental"
+	if $install_dir/check_backup_schedule inc; then
+	    # no incremental backup needed:
+	    echo "no incremental backup needed"
+	    exit;
+	else
+	    # incremental needed:
+	    echo "incremental needed"
+	    ext="inc"
+	fi
+    else
+	# full needed:
+	echo "full needed"
+	true
+    fi
+    echo "done checking schedule:"
 fi
 
 for backup in $install_dir/ssbackup $install_dir/sbackup-launch /usr/bin/sbackup /usr/sbin/sbackupd; do
